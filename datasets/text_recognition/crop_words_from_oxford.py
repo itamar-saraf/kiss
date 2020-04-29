@@ -3,6 +3,7 @@ import json
 
 import os
 import sys
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__)))))
 
 import re
@@ -55,7 +56,7 @@ def main(args):
     source_image_dir = os.path.dirname(args.gt_file)
 
     iterator = tqdm(zip(image_names, word_bboxes, char_bboxes, text), total=len(image_names))
-
+    just_check = 0
     generated_gt = []
     length_of_longest_word = 0
     for image_name, word_boxes, char_boxes, words in iterator:
@@ -71,10 +72,10 @@ def main(args):
                     crop = aabbs[i].crop_from_image(the_image)
                     destination_dir = os.path.join(args.destination, os.path.dirname(image_name))
                     os.makedirs(destination_dir, exist_ok=True)
-                    destination_file_name = f"{os.path.splitext(image_name)[0]}_{i}.png"
+                    destination_file_name = f"{os.path.splitext(image_name)[0]}_{i}.jpg"
 
                     crop.save(os.path.join(args.destination, destination_file_name))
-                    boxes = char_boxes[char_shift:char_shift+len(words[i])]
+                    boxes = char_boxes[char_shift:char_shift + len(words[i])]
                     boxes = [get_relative_box_position(aabbs[i], char_box) for char_box in boxes]
                     generated_gt.append({
                         "file_name": destination_file_name,
@@ -85,6 +86,12 @@ def main(args):
 
                     if len(words[i]) > length_of_longest_word:
                         length_of_longest_word = len(words[i])
+
+                    with open(os.path.join(args.destination, "list.txt"), "a") as f:
+                        path = './dataset/' + destination_file_name
+
+                        f.write(path + '\t' + words[i] + '\n')
+
         except Exception as e:
             print(e)
             print(image_name)
@@ -96,7 +103,8 @@ def main(args):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Tool that takes oxford detection gt and crops all words using their aabb")
+    parser = argparse.ArgumentParser(
+        description="Tool that takes oxford detection gt and crops all words using their aabb")
     parser.add_argument("gt_file", help="path to oxford gt file")
     parser.add_argument("destination", help="path to destination dir, where you want to save the cropped images")
 
